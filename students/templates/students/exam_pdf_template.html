@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>시험 결과 PDF</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    h2 { margin-bottom: 10px; }
+    .score-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .score-table th, .score-table td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+    .bar-container {
+      width: 200px; 
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      margin: 0 auto;
+      position: relative;
+      height: 16px;
+    }
+    .bar {
+      height: 100%;
+      background: #80bfff; /* 학생 점수 */
+      position: absolute;
+      top: 0; left: 0;
+    }
+    .bar-avg {
+      height: 100%;
+      background: rgba(255, 99, 71, 0.6); /* 반 평균 (약간 투명) */
+      position: absolute;
+      top: 0; left: 0;
+    }
+  </style>
+</head>
+<body>
+  <h2>{{ exam_result.exam.name }} ({{ exam_result.exam.date|date:"Y년 m월 d일" }})</h2>
+  <p><strong>학생 이름:</strong> {{ exam_result.student.name }}</p>
+  <p><strong>총점:</strong> {{ exam_result.total_score|floatformat:2 }} / {{ exam_result.max_score|floatformat:2 }}</p>
+  <p><strong>반 평균:</strong> {{ exam_result.exam.average|floatformat:2 }}</p>
+  <p><strong>석차:</strong> {{ exam_result.rank }}</p>
+
+  <h3>분야별 성적 비교 그래프</h3>
+  <table class="score-table">
+    <thead>
+      <tr>
+        <th>분야</th>
+        <th>정의 이름</th>
+        <th>그래프 (학생 vs 반 평균)</th>
+        <th>학생 점수</th>
+        <th>반 평균</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for field in field_data %}
+      <tr>
+        <td>{{ field.label }}</td>
+        <td>{{ field.definition }}</td>
+        <td>
+          <div class="bar-container">
+            <!-- 학생 막대 -->
+            <div class="bar" style="width:{{ field.score|floatformat:0 }}%;"></div>
+            <!-- 반 평균 막대 -->
+            <div class="bar-avg" style="width:{{ field.avg_score|floatformat:0 }}%;"></div>
+          </div>
+        </td>
+        <td>{{ field.score|floatformat:2 }}</td>
+        <td>{{ field.avg_score|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

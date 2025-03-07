@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h2>학부모 대시보드</h2>
+
+{% if student %}
+    <!-- 최근 과제 정보와 코멘트 -->
+    {% if latest_assignment %}
+    <div style="margin-bottom: 20px;">
+      <h4>최근 과제 ({{ latest_assignment.date|date:"Y년 m월 d일" }})</h4>
+      <ul>
+        {% if latest_assignment.task1_name %}<li>과제1: {{ latest_assignment.task1_name }}</li>{% endif %}
+        {% if latest_assignment.task2_name %}<li>과제2: {{ latest_assignment.task2_name }}</li>{% endif %}
+        {% if latest_assignment.task3_name %}<li>과제3: {{ latest_assignment.task3_name }}</li>{% endif %}
+        {% if latest_assignment.task4_name %}<li>과제4: {{ latest_assignment.task4_name }}</li>{% endif %}
+        {% if latest_assignment.task5_name %}<li>과제5: {{ latest_assignment.task5_name }}</li>{% endif %}
+      </ul>
+      <p><strong>코멘트:</strong></p>
+      <p style="white-space: pre-wrap;">{{ latest_assignment.comment }}</p>
+
+      {% if latest_submission %}
+        <p><strong>이행률 (0~100):</strong></p>
+        <ul>
+          {% if latest_assignment.task1_name %}<li>{{ latest_assignment.task1_name }} → {{ latest_submission.completion_rate1 }}%</li>{% endif %}
+          {% if latest_assignment.task2_name %}<li>{{ latest_assignment.task2_name }} → {{ latest_submission.completion_rate2 }}%</li>{% endif %}
+          {% if latest_assignment.task3_name %}<li>{{ latest_assignment.task3_name }} → {{ latest_submission.completion_rate3 }}%</li>{% endif %}
+          {% if latest_assignment.task4_name %}<li>{{ latest_assignment.task4_name }} → {{ latest_submission.completion_rate4 }}%</li>{% endif %}
+          {% if latest_assignment.task5_name %}<li>{{ latest_assignment.task5_name }} → {{ latest_submission.completion_rate5 }}%</li>{% endif %}
+        </ul>
+      {% else %}
+        <p style="color:red;">이행 정보가 없습니다.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- 두 개의 링크: 모든 시험 보기, 모든 과제 보기 -->
+    <p>
+      <a href="{% url 'all_exams_view' student.id %}" target="_blank" style="margin-right:10px;">모든 시험 보기</a>
+      <a href="{% url 'all_assignments_view' student.id %}" target="_blank">모든 과제 보기</a>
+    </p>
+
+    <!-- 최근 10회 시험 그래프 -->
+    <div style="width: 80%; max-width: 800px; height: 400px; margin: auto;">
+        <canvas id="recentExamChart"></canvas>
+    </div>
+    <p id="noDataMessage" style="display: none; color: red;">데이터가 없습니다.</p>
+
+    <!-- 전체 시험 그래프 -->
+    <div style="width: 80%; max-width: 800px; height: 400px; margin: auto; margin-top: 30px;">
+        <canvas id="overallExamChart"></canvas>
+    </div>
+    <p id="noDataMessage2" style="display: none; color: red;">데이터가 없습니다.</p>
+
+{% else %}
+    <p>배정된 학생이 없습니다.</p>
+{% endif %}
+
+<!-- Chart.js 스크립트 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+/* 최근 10회 시험 차트 */
+fetch("{% url 'exam_chart_data' %}")
+    .then(response => response.json())
+    .then(data => {
+        if (!data.exam_names || data.exam_names.length === 0) {
+            document.getElementById("noDataMessage").style.display = "block";
+            return;
+        }
+        const ctx = document.getElementById("recentExamChart").getContext("2d");
+        new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: data.exam_names,
+                datasets: [
+                    {
+                        label: "학생 성적",
+                        data: data.student_scores,
+                        borderColor: "blue",
+                        backgroundColor: "rgba(0, 0, 255, 0.2)",
+                        fill: true,
+                        tension: 0.1,
+                        pointRadius: 0
+                    },
+                    {
+                        label: "반 평균",
+                        data: data.class_averages,
+                        borderColor: "red",
+                        backgroundColor: "rgba(255, 0, 0, 0.2)",
+                        fill: true,
+                        tension: 0.1,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    })
+    .catch(err => console.error("🚨 exam_chart_data fetch error:", err));
+
+/* 전체 시험 차트 */
+fetch("{% url 'exam_chart_all_data' %}")
+    .then(response => response.json())
+    .then(data => {
+        if (!data.exam_names || data.exam_names.length === 0) {
+            document.getElementById("noDataMessage2").style.display = "block";
+            return;
+        }
+        const ctx2 = document.getElementById("overallExamChart").getContext("2d");
+        new Chart(ctx2, {
+            data: {
+                labels: data.exam_names,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: "학생 성적",
+                        data: data.student_scores,
+                        borderColor: "green",
+                        backgroundColor: "transparent",
+                        tension: 0.1,
+                        pointRadius: 0
+                    },
+                    {
+                        type: 'bar',
+                        label: "반 평균",
+                        data: data.class_averages,
+                        backgroundColor: "rgba(255,165,0,0.5)",
+                        borderColor: "orange"
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    })
+    .catch(err => console.error("🚨 exam_chart_all_data fetch error:", err));
+</script>
+{% endblock %}

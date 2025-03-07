@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{{ student.name }}의 시험 목록</h2>
+
+<table border="1">
+    <tr>
+        <th>시험 이름</th>
+        <th>날짜</th>
+        <th>총점</th>
+        <th>반 평균</th>
+        <th>석차</th>
+        <th>자세히 보기</th>
+    </tr>
+    {% for result in exam_results %}
+    <tr>
+        <td>{{ result.exam.name }}</td>
+        <td>{{ result.exam.date }}</td>
+        <td>{{ result.total_score }}</td>
+        <td>{{ result.exam.average }}</td>
+        <td>{{ result.rank }}</td>
+        <td><a href="{% url 'exam_detail' student.id result.id %}">상세 보기</a></td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="6">시험 성적이 없습니다.</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

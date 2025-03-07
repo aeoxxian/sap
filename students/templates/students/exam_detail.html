@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>{{ exam_result.exam.name }} ({{ exam_result.exam.date|date:"Y년 m월 d일" }})</h2>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <p><strong>총점:</strong> {{ exam_result.total_score }} / {{ exam_result.max_score }}</p>
+      <p><strong>반 평균:</strong> {{ exam_result.exam.average }}</p>
+      <p><strong>석차:</strong> {{ exam_result.rank }}</p>
+      <p><strong>응시 상태:</strong> {{ exam_result.status }}</p>
+    </div>
+  </div>
+
+  <!-- 분야별 성적 비교 그래프 -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="card-title">분야별 성적 비교 그래프</h5>
+      <div style="width: 80%; max-width: 800px; height: 400px; margin: auto;">
+        <canvas id="examDetailChart"></canvas>
+      </div>
+      <p id="noDataDetailMessage" style="display: none; color: red;">데이터가 없습니다.</p>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="card-title">분야별 점수</h5>
+      <ul>
+        {% if exam_result.field1_definition %}
+          <li><strong>{{ exam_result.field1_definition.name }}:</strong> {{ exam_result.field1 }}</li>
+        {% elif exam_result.field1 %}
+          <li><strong>분야 1:</strong> {{ exam_result.field1 }}</li>
+        {% endif %}
+        {% if exam_result.field2_definition %}
+          <li><strong>{{ exam_result.field2_definition.name }}:</strong> {{ exam_result.field2 }}</li>
+        {% elif exam_result.field2 %}
+          <li><strong>분야 2:</strong> {{ exam_result.field2 }}</li>
+        {% endif %}
+        {% if exam_result.field3_definition %}
+          <li><strong>{{ exam_result.field3_definition.name }}:</strong> {{ exam_result.field3 }}</li>
+        {% elif exam_result.field3 %}
+          <li><strong>분야 3:</strong> {{ exam_result.field3 }}</li>
+        {% endif %}
+        {% if exam_result.field4_definition %}
+          <li><strong>{{ exam_result.field4_definition.name }}:</strong> {{ exam_result.field4 }}</li>
+        {% elif exam_result.field4 %}
+          <li><strong>분야 4:</strong> {{ exam_result.field4 }}</li>
+        {% endif %}
+        {% if exam_result.field5_definition %}
+          <li><strong>{{ exam_result.field5_definition.name }}:</strong> {{ exam_result.field5 }}</li>
+        {% elif exam_result.field5 %}
+          <li><strong>분야 5:</strong> {{ exam_result.field5 }}</li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- PDF 다운로드 및 뒤로 가기 버튼 -->
+  <div class="mb-3">
+    <a href="{% url 'download_exam_pdf' exam_result.id %}" class="btn btn-primary" target="_blank">📄 PDF 다운로드</a>
+    <a href="{% url 'parent_dashboard' %}" class="btn btn-secondary">뒤로 가기</a>
+  </div>
+</div>
+
+<!-- Chart.js 라이브러리 추가 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    window.onload = function () {
+        var fieldLabels = [];
+        var studentFieldScores = [];
+        var classFieldAverages = [];
+
+        // 각 분야별 점수와 해당 시험의 반 평균 분야별 점수를 수집.
+        {% if exam_result.field1 %}
+            fieldLabels.push("{{ exam_result.field1_definition.name|default:'분야 1' }}");
+            studentFieldScores.push({{ exam_result.field1 }});
+            classFieldAverages.push({{ exam_result.exam.avg_field1 }});
+        {% endif %}
+        {% if exam_result.field2 %}
+            fieldLabels.push("{{ exam_result.field2_definition.name|default:'분야 2' }}");
+            studentFieldScores.push({{ exam_result.field2 }});
+            classFieldAverages.push({{ exam_result.exam.avg_field2 }});
+        {% endif %}
+        {% if exam_result.field3 %}
+            fieldLabels.push("{{ exam_result.field3_definition.name|default:'분야 3' }}");
+            studentFieldScores.push({{ exam_result.field3 }});
+            classFieldAverages.push({{ exam_result.exam.avg_field3 }});
+        {% endif %}
+        {% if exam_result.field4 %}
+            fieldLabels.push("{{ exam_result.field4_definition.name|default:'분야 4' }}");
+            studentFieldScores.push({{ exam_result.field4 }});
+            classFieldAverages.push({{ exam_result.exam.avg_field4 }});
+        {% endif %}
+        {% if exam_result.field5 %}
+            fieldLabels.push("{{ exam_result.field5_definition.name|default:'분야 5' }}");
+            studentFieldScores.push({{ exam_result.field5 }});
+            classFieldAverages.push({{ exam_result.exam.avg_field5 }});
+        {% endif %}
+
+        var ctx = document.getElementById("examDetailChart").getContext("2d");
+        var chartData = {};
+
+        if (fieldLabels.length > 0) {
+            chartData = {
+                labels: fieldLabels,
+                datasets: [
+                    {
+                        label: "학생 점수",
+                        data: studentFieldScores,
+                        backgroundColor: "rgba(54, 162, 235, 0.5)",
+                        borderColor: "rgba(54, 162, 235, 1)",
+                        borderWidth: 1
+                    },
+                    {
+                        label: "반 평균",
+                        data: classFieldAverages,
+                        backgroundColor: "rgba(255, 99, 132, 0.5)",
+                        borderColor: "rgba(255, 99, 132, 1)",
+                        borderWidth: 1
+                    }
+                ]
+            };
+        } else {
+            // 만약 각 분야에 대한 데이터가 없다면 전체 총점 비교
+            chartData = {
+                labels: ["학생 총점", "반 평균"],
+                datasets: [
+                    {
+                        label: "성적 비교",
+                        data: [{{ exam_result.total_score|default:"0" }}, {{ exam_result.exam.average|default:"0" }}],
+                        backgroundColor: ["rgba(54, 162, 235, 0.5)", "rgba(255, 99, 132, 0.5)"],
+                        borderColor: ["rgba(54, 162, 235, 1)", "rgba(255, 99, 132, 1)"],
+                        borderWidth: 1
+                    }
+                ]
+            };
+        }
+
+        new Chart(ctx, {
+            type: "bar",
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    };
+</script>
+{% endblock %}

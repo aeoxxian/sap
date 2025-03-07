@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h2>{{ student.name }} 전체 시험 목록</h2>
+<table border="1">
+    <thead>
+        <tr>
+            <th>시험명</th>
+            <th>실시 날짜</th>
+            <th>총점</th>
+            <th>석차</th>
+            <th>응시 상태</th>
+            <th>자세한 성적 보기</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for result in exam_results %}
+        <tr>
+            <td>{{ result.exam.name }}</td>
+            <td>{{ result.exam.date|date:"Y년 m월 d일" }}</td>
+            <td>{{ result.total_score }}</td>
+            <td>{{ result.rank }}</td>
+            <td>{{ result.status }}</td>
+            <td>
+                <a href="{% url 'exam_detail' result.student.id result.exam.id %}" target="_blank">상세 보기</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
