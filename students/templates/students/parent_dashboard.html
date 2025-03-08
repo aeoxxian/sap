@@ -5,45 +5,19 @@
 <h2>학부모 대시보드</h2>
 
 {% if student %}
-    <!-- 최근 과제 정보와 코멘트 -->
+    <!-- 최근 과제 정보 -->
     {% if latest_assignment %}
     <div style="margin-bottom: 20px;">
-        <h4>최근 과제 ({{ latest_assignment.date|date:"Y년 m월 d일" }})</h4>
-        <ul>
-            {% if latest_assignment.task1_name %}
-                <li>과제1: {{ latest_assignment.task1_name }} / 
-                    {% if latest_submission %} {{ latest_submission.completion_rate1 }}% {% else %} 미제출 {% endif %}
-                </li>
-            {% endif %}
-            {% if latest_assignment.task2_name %}
-                <li>과제2: {{ latest_assignment.task2_name }} / 
-                    {% if latest_submission %} {{ latest_submission.completion_rate2 }}% {% else %} 미제출 {% endif %}
-                </li>
-            {% endif %}
-            {% if latest_assignment.task3_name %}
-                <li>과제3: {{ latest_assignment.task3_name }} / 
-                    {% if latest_submission %} {{ latest_submission.completion_rate3 }}% {% else %} 미제출 {% endif %}
-                </li>
-            {% endif %}
-            {% if latest_assignment.task4_name %}
-                <li>과제4: {{ latest_assignment.task4_name }} / 
-                    {% if latest_submission %} {{ latest_submission.completion_rate4 }}% {% else %} 미제출 {% endif %}
-                </li>
-            {% endif %}
-            {% if latest_assignment.task5_name %}
-                <li>과제5: {{ latest_assignment.task5_name }} / 
-                    {% if latest_submission %} {{ latest_submission.completion_rate5 }}% {% else %} 미제출 {% endif %}
-                </li>
-            {% endif %}
-        </ul>
-
-        <!-- 코멘트 -->
-        {% if latest_assignment.comment %}
-            <p><strong>코멘트:</strong></p>
-            <p style="white-space: pre-wrap;">{{ latest_assignment.comment }}</p>
-        {% else %}
-            <p style="color:gray;">코멘트가 없습니다.</p>
-        {% endif %}
+      <h4>최근 과제 ({{ latest_assignment.date|date:"Y년 m월 d일" }})</h4>
+      <ul>
+        {% if latest_assignment.task1_name %}<li>과제1: {{ latest_assignment.task1_name }} / {{ latest_submission.completion_rate1 }}%</li>{% endif %}
+        {% if latest_assignment.task2_name %}<li>과제2: {{ latest_assignment.task2_name }} / {{ latest_submission.completion_rate2 }}%</li>{% endif %}
+        {% if latest_assignment.task3_name %}<li>과제3: {{ latest_assignment.task3_name }} / {{ latest_submission.completion_rate3 }}%</li>{% endif %}
+        {% if latest_assignment.task4_name %}<li>과제4: {{ latest_assignment.task4_name }} / {{ latest_submission.completion_rate4 }}%</li>{% endif %}
+        {% if latest_assignment.task5_name %}<li>과제5: {{ latest_assignment.task5_name }} / {{ latest_submission.completion_rate5 }}%</li>{% endif %}
+      </ul>
+      <p><strong>코멘트:</strong></p>
+      <p style="white-space: pre-wrap;">{{ latest_assignment.comment }}</p>
     </div>
     {% endif %}
 
