@@ -139,17 +139,20 @@ def parent_dashboard(request):
         # 가장 최근 과제
         latest_assignment = Assignment.objects.filter(class_group=student.class_group).order_by('-date').first()
         latest_submission = None
+        latest_comment = None
         if latest_assignment:
             # 학생이 제출한 이행률(AssignmentSubmission)
             latest_submission = AssignmentSubmission.objects.filter(
                 assignment=latest_assignment,
                 student=student
             ).first()
+            latest_comment = latest_submission.daily_comment if latest_submission else None
 
         return render(request, "students/parent_dashboard.html", {
             "student": student,
             "latest_assignment": latest_assignment,
             "latest_submission": latest_submission,
+            "latest_comment" : latest_comment
         })
     except Parent.DoesNotExist:
         messages.error(request, "해당 계정은 학부모 계정이 아닙니다.")
@@ -198,6 +201,7 @@ def all_assignments_view(request, student_id):
     # 각 assignment에 a.submission 연결
     for a in assignments:
         a.submission = submission_dict.get(a.id, None)
+        a.comment = a.submission.daily_comment if a.submission else ""
 
     return render(request, "students/all_assignments.html", {
         "student": student,
