@@ -16,6 +16,24 @@ class ClassGroup(models.Model):
     def __str__(self):
         return self.name
 
+
+# -----------------------------
+# 학부모 (Parent)
+# -----------------------------
+class Parent(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="학부모 계정")
+    phone_number = models.CharField("전화번호", max_length=20, null=True, blank=True)
+    # ❌ 기존에 있던 students = models.ManyToManyField(Student, ...) 제거
+    #   M2M은 Student에서 정의하도록 변경
+
+    class Meta:
+        verbose_name = "학부모"
+        verbose_name_plural = "학부모들"
+
+    def __str__(self):
+        return self.user.username
+
+
 # -----------------------------
 # 학생 (Student)
 # -----------------------------
@@ -29,12 +47,30 @@ class Student(models.Model):
     )
     school = models.CharField("출신 학교", max_length=100)
 
+    # ✅ 학부모 ↔ 학생 M2M 필드를 Student 쪽에 정의
+    parents = models.ManyToManyField(
+        Parent,
+        related_name="children",  # 학부모 모델에서 student 목록 접근 시 => parent.children.all()
+        blank=True,
+        verbose_name="학부모 목록"
+    )
+
     class Meta:
         verbose_name = "학생"
         verbose_name_plural = "학생들"
 
     def __str__(self):
         return f"{self.name} ({self.class_group.name})"
+
+
+@receiver(post_save, sender=User)
+def create_parent_profile(sender, instance, created, **kwargs):
+    """
+    새 User가 생성되면 Parent를 자동 생성 (학부모 계정용)
+    """
+    if created:
+        Parent.objects.create(user=instance)
+
 
 # -----------------------------
 # 시험 (Exam)
@@ -67,6 +103,7 @@ class Exam(models.Model):
     def update_field_averages(self):
         from django.db.models import Avg
         results = self.exam_results.all()
+
         agg = results.aggregate(
             avg1=Avg('field1'),
             avg2=Avg('field2'),
@@ -82,6 +119,7 @@ class Exam(models.Model):
         self.save(update_fields=[
             'avg_field1','avg_field2','avg_field3','avg_field4','avg_field5'
         ])
+
 
 # -----------------------------
 # 분야 정의 (FieldDefinition)
@@ -101,6 +139,7 @@ class FieldDefinition(models.Model):
 
     def __str__(self):
         return f"{self.class_group.name} - {self.name}"
+
 
 # -----------------------------
 # 시험 결과 (ExamResult)
@@ -136,20 +175,30 @@ class ExamResult(models.Model):
     field4 = models.FloatField("분야별 점수 - Field4", null=True, blank=True, default=0)
     field5 = models.FloatField("분야별 점수 - Field5", null=True, blank=True, default=0)
 
-    field1_definition = models.ForeignKey(FieldDefinition, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name="exam_results_field1", verbose_name="분야1 이름"
+    field1_definition = models.ForeignKey(
+        FieldDefinition, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="exam_results_field1",
+        verbose_name="분야1 이름"
     )
-    field2_definition = models.ForeignKey(FieldDefinition, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name="exam_results_field2", verbose_name="분야2 이름"
+    field2_definition = models.ForeignKey(
+        FieldDefinition, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="exam_results_field2",
+        verbose_name="분야2 이름"
     )
-    field3_definition = models.ForeignKey(FieldDefinition, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name="exam_results_field3", verbose_name="분야3 이름"
+    field3_definition = models.ForeignKey(
+        FieldDefinition, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="exam_results_field3",
+        verbose_name="분야3 이름"
     )
-    field4_definition = models.ForeignKey(FieldDefinition, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name="exam_results_field4", verbose_name="분야4 이름"
+    field4_definition = models.ForeignKey(
+        FieldDefinition, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="exam_results_field4",
+        verbose_name="분야4 이름"
     )
-    field5_definition = models.ForeignKey(FieldDefinition, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name="exam_results_field5", verbose_name="분야5 이름"
+    field5_definition = models.ForeignKey(
+        FieldDefinition, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="exam_results_field5",
+        verbose_name="분야5 이름"
     )
 
     class Meta:
@@ -160,55 +209,33 @@ class ExamResult(models.Model):
         return f"{self.student.name} - {self.exam.name} ({self.status})"
 
 
-# -----------------------------
-# 학부모 (Parent)
-# -----------------------------
-class Parent(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="학부모 계정")
-    phone_number = models.CharField("전화번호", max_length=20, null=True, blank=True)
-    students = models.ManyToManyField(Student, related_name="parents", verbose_name="자녀 목록")
-
-    class Meta:
-        verbose_name = "학부모"
-        verbose_name_plural = "학부모들"
-
-    def __str__(self):
-        return self.user.username
-
-@receiver(post_save, sender=User)
-def create_parent_profile(sender, instance, created, **kwargs):
-    if created:
-        Parent.objects.create(user=instance)
-
 @receiver(post_save, sender=ExamResult)
 def update_exam_field_averages_on_save(sender, instance, **kwargs):
     exam = instance.exam
     exam.update_field_averages()
+
 
 @receiver(post_delete, sender=ExamResult)
 def update_exam_field_averages_on_delete(sender, instance, **kwargs):
     exam = instance.exam
     exam.update_field_averages()
 
-# ============================
-# ========== 과제(Assignment) 및 학생별 이행률(AssignmentSubmission) =========
-# ============================
 
+# ============================
+# ========== 과제(Assignment) 및 학생별 이행률(AssignmentSubmission)
+# ============================
 class Assignment(models.Model):
     class_group = models.ForeignKey(
         ClassGroup, on_delete=models.CASCADE,
-        related_name="assignments",
-        verbose_name="분반"
+        related_name="assignments", verbose_name="분반"
     )
     date = models.DateField("날짜")
 
-    # 5개의 과제명
     task1_name = models.CharField("과제1 이름", max_length=200, blank=True)
     task2_name = models.CharField("과제2 이름", max_length=200, blank=True)
     task3_name = models.CharField("과제3 이름", max_length=200, blank=True)
     task4_name = models.CharField("과제4 이름", max_length=200, blank=True)
     task5_name = models.CharField("과제5 이름", max_length=200, blank=True)
-
 
     class Meta:
         verbose_name = "과제"
@@ -216,10 +243,8 @@ class Assignment(models.Model):
         ordering = ["-date"]
 
     def __str__(self):
-        # 예: "3반 (2025-02-18)"
         return f"{self.class_group.name} ({self.date})"
-    
-    
+
 
 class AssignmentSubmission(models.Model):
     """
@@ -234,18 +259,19 @@ class AssignmentSubmission(models.Model):
         related_name="assignment_submissions", verbose_name="학생"
     )
 
-    # 각 과제별 이행률 (0.0 ~ 1.0)
+    # 각 과제별 이행률 (0~100)
     completion_rate1 = models.FloatField("과제1 이행률", default=0.0)
     completion_rate2 = models.FloatField("과제2 이행률", default=0.0)
     completion_rate3 = models.FloatField("과제3 이행률", default=0.0)
     completion_rate4 = models.FloatField("과제4 이행률", default=0.0)
     completion_rate5 = models.FloatField("과제5 이행률", default=0.0)
+
     daily_comment = models.TextField("일일 코멘트", blank=True)
 
     class Meta:
         verbose_name = "과제 이행 정보"
         verbose_name_plural = "과제 이행 정보들"
-        unique_together = ("assignment", "student")  # 한 학생이 하루치 과제는 1개만 등록 가능
+        unique_together = ("assignment", "student")
 
     def __str__(self):
         return f"{self.assignment} - {self.student.name}"
