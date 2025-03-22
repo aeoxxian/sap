@@ -23,8 +23,7 @@ class ClassGroup(models.Model):
 class Parent(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="학부모 계정")
     phone_number = models.CharField("전화번호", max_length=20, null=True, blank=True)
-    # ❌ 기존에 있던 students = models.ManyToManyField(Student, ...) 제거
-    #   M2M은 Student에서 정의하도록 변경
+    # ManyToManyField는 학생 쪽(Student)에서 정의되어 있음 (parents = ...)
 
     class Meta:
         verbose_name = "학부모"
@@ -50,7 +49,7 @@ class Student(models.Model):
     # ✅ 학부모 ↔ 학생 M2M 필드를 Student 쪽에 정의
     parents = models.ManyToManyField(
         Parent,
-        related_name="children",  # 학부모 모델에서 student 목록 접근 시 => parent.children.all()
+        related_name="children",  # Parent에서 역참조 시 parent.children.all()
         blank=True,
         verbose_name="학부모 목록"
     )

@@ -106,11 +106,14 @@ def parent_signup(request):
         if form.is_valid():
             # 새로운 User 계정 생성
             user = form.save()
+
             # student: ModelChoiceField => Student 객체
             chosen_student = form.cleaned_data["student"]
-            # 학부모 계정과 학생 연결
+            # ✅ 학부모 ↔ 학생 연결 (ManyToManyField)
+            #    parent.children -> 학생 목록, student.parents -> 학부모 목록
             parent = user.parent
-            parent.students.add(chosen_student)
+            chosen_student.parents.add(parent)  # ✔ student -> parent 연결
+
             # 회원가입 후 자동 로그인
             login(request, user)
             return redirect("parent_dashboard")
@@ -126,33 +129,32 @@ def parent_signup(request):
 def parent_dashboard(request):
     """
     대시보드:
-    1) 가장 최근 과제 + 코멘트 + 이행률 표시
-    2) 그 아래에 '모든 시험 보기', '모든 과제 보기' 링크
-    3) 2개 시험 그래프(최근10, 전체) => 기존 parent_dashboard.html에서 처리
+    - parent.children.first()로 학생을 가져온 뒤, 그 학생의 최근 과제, 시험 정보 표시
     """
     try:
         parent = Parent.objects.get(user=request.user)
-        student = parent.students.first()
+        # ✅ student = parent.children.first() 로 수정
+        student = parent.children.first()
         if not student:
             return render(request, 'students/parent_dashboard.html', {'error': "배정된 학생이 없습니다."})
 
-        # 가장 최근 과제
+        # 최근 과제
         latest_assignment = Assignment.objects.filter(class_group=student.class_group).order_by('-date').first()
         latest_submission = None
         latest_comment = None
         if latest_assignment:
-            # 학생이 제출한 이행률(AssignmentSubmission)
             latest_submission = AssignmentSubmission.objects.filter(
                 assignment=latest_assignment,
                 student=student
             ).first()
-            latest_comment = latest_submission.daily_comment if latest_submission else None
+            if latest_submission:
+                latest_comment = latest_submission.daily_comment
 
         return render(request, "students/parent_dashboard.html", {
             "student": student,
             "latest_assignment": latest_assignment,
             "latest_submission": latest_submission,
-            "latest_comment" : latest_comment
+            "latest_comment": latest_comment,
         })
     except Parent.DoesNotExist:
         messages.error(request, "해당 계정은 학부모 계정이 아닙니다.")
@@ -165,8 +167,9 @@ def all_exams_view(request, student_id):
     모든 시험 목록 표를 새 탭에서 보여주는 뷰
     """
     parent = request.user.parent
+    # ✅ student가 parent.children에 속해있는지 체크
     student = get_object_or_404(Student, id=student_id)
-    if not parent.students.filter(id=student_id).exists():
+    if not parent.children.filter(id=student_id).exists():
         messages.error(request, "접근 권한이 없습니다.")
         return redirect("parent_dashboard")
 
@@ -180,11 +183,13 @@ def all_exams_view(request, student_id):
 @login_required
 def all_assignments_view(request, student_id):
     """
-    모든 과제 보기 - 날짜별 과제명5개, 이행률5개, 학생별 코멘트(AssignmentSubmission.daily_comment).
+    모든 과제 보기 - 날짜별 과제명 5개, 이행률 5개, 학생별 코멘트(AssignmentSubmission.daily_comment).
     """
     parent = request.user.parent
     student = get_object_or_404(Student, id=student_id)
-    if not parent.students.filter(id=student.id).exists():
+
+    # ✅ parent.children => student 권한 체크
+    if not parent.children.filter(id=student.id).exists():
         messages.error(request, "접근 권한이 없습니다.")
         return redirect("parent_dashboard")
 
@@ -192,13 +197,11 @@ def all_assignments_view(request, student_id):
     assignments = Assignment.objects.filter(class_group=class_group).order_by("-date")
 
     # submission_dict: { assignment_id: submission_obj }
-    from .models import AssignmentSubmission
-    submission_dict = {}
     subs = AssignmentSubmission.objects.filter(student=student, assignment__in=assignments)
+    submission_dict = {}
     for s in subs:
         submission_dict[s.assignment_id] = s
     
-    # 각 assignment에 a.submission 연결
     for a in assignments:
         a.submission = submission_dict.get(a.id, None)
         a.comment = a.submission.daily_comment if a.submission else ""
@@ -207,8 +210,6 @@ def all_assignments_view(request, student_id):
         "student": student,
         "assignments": assignments,
     })
-
-
 
 
 @login_required
@@ -226,7 +227,7 @@ def exam_chart_data(request):
     """
     try:
         parent = Parent.objects.get(user=request.user)
-        student = parent.students.first()
+        student = parent.children.first()
         if not student:
             return JsonResponse({"error": "배정된 학생이 없습니다."}, status=400)
 
@@ -238,8 +239,8 @@ def exam_chart_data(request):
             "class_averages": [r.exam.average for r in results],
         }
         return JsonResponse(data)
-    except (Parent.DoesNotExist, AttributeError):
-        return JsonResponse({"error": "잘못된 요청입니다."}, status=400)
+    except Parent.DoesNotExist:
+        return JsonResponse({"error": "해당 계정은 학부모 계정이 아닙니다."}, status=400)
 
 
 @login_required
@@ -249,7 +250,7 @@ def exam_chart_all_data(request):
     """
     try:
         parent = Parent.objects.get(user=request.user)
-        student = parent.students.first()
+        student = parent.children.first()
         if not student:
             return JsonResponse({"error": "배정된 학생이 없습니다."}, status=400)
 
@@ -260,14 +261,13 @@ def exam_chart_all_data(request):
             "class_averages": [r.exam.average for r in results],
         }
         return JsonResponse(data)
-    except (Parent.DoesNotExist, AttributeError):
-        return JsonResponse({"error": "잘못된 요청입니다."}, status=400)
+    except Parent.DoesNotExist:
+        return JsonResponse({"error": "해당 계정은 학부모 계정이 아닙니다."}, status=400)
 
 
 @login_required
 def download_exam_pdf(request, exam_id):
     exam_result = get_object_or_404(ExamResult, id=exam_id)
-    # 분야별 학생 점수 & 반 평균
     field_data = [
         {
             "label": "분야1",
