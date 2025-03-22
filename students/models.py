@@ -21,9 +21,16 @@ class ClassGroup(models.Model):
 # 학부모 (Parent)
 # -----------------------------
 class Parent(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="학부모 계정")
+    """
+    학부모 계정 정보
+    - 학생과의 M2M 연결은 Student 모델에 정의 (parents)
+    - 역참조 시: parent.children.all()
+    """
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE,
+        verbose_name="학부모 계정"
+    )
     phone_number = models.CharField("전화번호", max_length=20, null=True, blank=True)
-    # ManyToManyField는 학생 쪽(Student)에서 정의되어 있음 (parents = ...)
 
     class Meta:
         verbose_name = "학부모"
@@ -37,19 +44,22 @@ class Parent(models.Model):
 # 학생 (Student)
 # -----------------------------
 class Student(models.Model):
+    """
+    학부모 ↔ 학생 관계를 학생 모델에서 ManyToManyField(parents)로 정의.
+    """
     name = models.CharField("학생 이름", max_length=50)
     class_group = models.ForeignKey(
-        ClassGroup,
+        "ClassGroup",
         on_delete=models.CASCADE,
         related_name='students',
         verbose_name="분반"
     )
     school = models.CharField("출신 학교", max_length=100)
 
-    # ✅ 학부모 ↔ 학생 M2M 필드를 Student 쪽에 정의
+    # 학부모 목록 (역참조: parent.children)
     parents = models.ManyToManyField(
         Parent,
-        related_name="children",  # Parent에서 역참조 시 parent.children.all()
+        related_name="children",
         blank=True,
         verbose_name="학부모 목록"
     )
@@ -62,11 +72,9 @@ class Student(models.Model):
         return f"{self.name} ({self.class_group.name})"
 
 
+# 학부모 User 생성 시 Parent 자동 생성
 @receiver(post_save, sender=User)
 def create_parent_profile(sender, instance, created, **kwargs):
-    """
-    새 User가 생성되면 Parent를 자동 생성 (학부모 계정용)
-    """
     if created:
         Parent.objects.create(user=instance)
 
@@ -110,11 +118,13 @@ class Exam(models.Model):
             avg4=Avg('field4'),
             avg5=Avg('field5'),
         )
+        # None이 아닌 경우만 round
         self.avg_field1 = round(agg['avg1'], 2) if agg['avg1'] else 0
         self.avg_field2 = round(agg['avg2'], 2) if agg['avg2'] else 0
         self.avg_field3 = round(agg['avg3'], 2) if agg['avg3'] else 0
         self.avg_field4 = round(agg['avg4'], 2) if agg['avg4'] else 0
         self.avg_field5 = round(agg['avg5'], 2) if agg['avg5'] else 0
+
         self.save(update_fields=[
             'avg_field1','avg_field2','avg_field3','avg_field4','avg_field5'
         ])
@@ -155,12 +165,16 @@ class ExamResult(models.Model):
     )
 
     student = models.ForeignKey(
-        Student, on_delete=models.CASCADE,
-        related_name='exam_results', verbose_name="학생"
+        Student,
+        on_delete=models.CASCADE,
+        related_name='exam_results',
+        verbose_name="학생"
     )
     exam = models.ForeignKey(
-        Exam, on_delete=models.CASCADE,
-        related_name='exam_results', verbose_name="시험"
+        Exam,
+        on_delete=models.CASCADE,
+        related_name='exam_results',
+        verbose_name="시험"
     )
     exam_date = models.DateField("시험 실시 날짜", null=True, blank=True)
     status = models.CharField("응시 상태", max_length=10, choices=STATUS_CHOICES)
@@ -221,7 +235,7 @@ def update_exam_field_averages_on_delete(sender, instance, **kwargs):
 
 
 # ============================
-# ========== 과제(Assignment) 및 학생별 이행률(AssignmentSubmission)
+# ========== 과제(Assignment) 및 이행률(AssignmentSubmission)
 # ============================
 class Assignment(models.Model):
     class_group = models.ForeignKey(
@@ -247,7 +261,7 @@ class Assignment(models.Model):
 
 class AssignmentSubmission(models.Model):
     """
-    하루의 과제(Assignment)에 대해 최대 5개의 과제 각각의 이행률을 저장
+    하루의 과제(Assignment)에 대해 최대 5개의 과제 각각 이행률(0~100) + 코멘트
     """
     assignment = models.ForeignKey(
         Assignment, on_delete=models.CASCADE,
@@ -258,7 +272,6 @@ class AssignmentSubmission(models.Model):
         related_name="assignment_submissions", verbose_name="학생"
     )
 
-    # 각 과제별 이행률 (0~100)
     completion_rate1 = models.FloatField("과제1 이행률", default=0.0)
     completion_rate2 = models.FloatField("과제2 이행률", default=0.0)
     completion_rate3 = models.FloatField("과제3 이행률", default=0.0)

@@ -50,8 +50,13 @@ def upload_csv(request):
                     max_score = 100
                     total_score = row["총점"] if pd.notna(row["총점"]) else 0
                     rank_value = row["석차"]
-                    rank = None if pd.isna(rank_value) or (isinstance(rank_value, str) and not rank_value.isdigit()) else int(rank_value)
-                    status = row["응시 상태"]
+                    rank = None
+                    if not pd.isna(rank_value) and isinstance(rank_value, (float,int)):
+                        rank = int(rank_value)
+                    elif isinstance(rank_value, str) and rank_value.isdigit():
+                        rank = int(rank_value)
+
+                    status = row["응시 상태"] if "응시 상태" in row else "응시"
 
                     ExamResult.objects.create(
                         student=student_obj,
@@ -104,48 +109,49 @@ def parent_signup(request):
     if request.method == "POST":
         form = ParentSignUpForm(request.POST)
         if form.is_valid():
-            # 새로운 User 계정 생성
+            # 1) 새 User 계정 생성
             user = form.save()
 
-            # student: ModelChoiceField => Student 객체
+            # 2) 학부모 - 학생 연결
             chosen_student = form.cleaned_data["student"]
-            # ✅ 학부모 ↔ 학생 연결 (ManyToManyField)
-            #    parent.children -> 학생 목록, student.parents -> 학부모 목록
+            # parent.children => Student 목록
             parent = user.parent
-            chosen_student.parents.add(parent)  # ✔ student -> parent 연결
+            chosen_student.parents.add(parent)
 
-            # 회원가입 후 자동 로그인
+            # 3) 자동 로그인
             login(request, user)
             return redirect("parent_dashboard")
         else:
             messages.error(request, "회원가입 정보가 올바르지 않습니다.")
     else:
         form = ParentSignUpForm()
-    
+
     return render(request, "students/parent_signup.html", {"form": form})
 
 
 @login_required
 def parent_dashboard(request):
     """
-    대시보드:
-    - parent.children.first()로 학생을 가져온 뒤, 그 학생의 최근 과제, 시험 정보 표시
+    학부모 대시보드:
+      - parent.children.first() 로 학생 가져옴
+      - 해당 학생의 최근 과제/이행률/코멘트 표시
+      - 그래프(최근10, 전체) 표시
     """
     try:
         parent = Parent.objects.get(user=request.user)
-        # ✅ student = parent.children.first() 로 수정
         student = parent.children.first()
         if not student:
             return render(request, 'students/parent_dashboard.html', {'error': "배정된 학생이 없습니다."})
 
-        # 최근 과제
-        latest_assignment = Assignment.objects.filter(class_group=student.class_group).order_by('-date').first()
+        latest_assignment = Assignment.objects.filter(
+            class_group=student.class_group
+        ).order_by('-date').first()
+
         latest_submission = None
         latest_comment = None
         if latest_assignment:
             latest_submission = AssignmentSubmission.objects.filter(
-                assignment=latest_assignment,
-                student=student
+                assignment=latest_assignment, student=student
             ).first()
             if latest_submission:
                 latest_comment = latest_submission.daily_comment
@@ -164,11 +170,11 @@ def parent_dashboard(request):
 @login_required
 def all_exams_view(request, student_id):
     """
-    모든 시험 목록 표를 새 탭에서 보여주는 뷰
+    모든 시험 목록 표
     """
-    parent = request.user.parent
-    # ✅ student가 parent.children에 속해있는지 체크
+    parent = Parent.objects.get(user=request.user)
     student = get_object_or_404(Student, id=student_id)
+    # 권한 체크
     if not parent.children.filter(id=student_id).exists():
         messages.error(request, "접근 권한이 없습니다.")
         return redirect("parent_dashboard")
@@ -183,13 +189,13 @@ def all_exams_view(request, student_id):
 @login_required
 def all_assignments_view(request, student_id):
     """
-    모든 과제 보기 - 날짜별 과제명 5개, 이행률 5개, 학생별 코멘트(AssignmentSubmission.daily_comment).
+    모든 과제 보기:
+      - 날짜별 과제명5개, 이행률5개, 코멘트
     """
-    parent = request.user.parent
+    parent = Parent.objects.get(user=request.user)
     student = get_object_or_404(Student, id=student_id)
-
-    # ✅ parent.children => student 권한 체크
-    if not parent.children.filter(id=student.id).exists():
+    # 권한 체크
+    if not parent.children.filter(id=student_id).exists():
         messages.error(request, "접근 권한이 없습니다.")
         return redirect("parent_dashboard")
 
@@ -201,7 +207,7 @@ def all_assignments_view(request, student_id):
     submission_dict = {}
     for s in subs:
         submission_dict[s.assignment_id] = s
-    
+
     for a in assignments:
         a.submission = submission_dict.get(a.id, None)
         a.comment = a.submission.daily_comment if a.submission else ""
@@ -214,6 +220,9 @@ def all_assignments_view(request, student_id):
 
 @login_required
 def exam_detail(request, student_id, exam_id):
+    """
+    특정 시험 상세 페이지
+    """
     exam_result = get_object_or_404(ExamResult, student__id=student_id, exam__id=exam_id)
     return render(request, "students/exam_detail.html", {
         "exam_result": exam_result
@@ -223,7 +232,7 @@ def exam_detail(request, student_id, exam_id):
 @login_required
 def exam_chart_data(request):
     """
-    학생의 최근 10회 시험 성적과 반 평균 데이터를 JSON 형식으로 반환
+    최근 10회 시험 성적 + 반 평균 → JSON
     """
     try:
         parent = Parent.objects.get(user=request.user)
@@ -240,13 +249,13 @@ def exam_chart_data(request):
         }
         return JsonResponse(data)
     except Parent.DoesNotExist:
-        return JsonResponse({"error": "해당 계정은 학부모 계정이 아닙니다."}, status=400)
+        return JsonResponse({"error": "해당 학부모를 찾을 수 없습니다."}, status=400)
 
 
 @login_required
 def exam_chart_all_data(request):
     """
-    학생의 전체 시험 성적과 반 평균 데이터를 JSON 형식으로 반환
+    전체 시험 성적 + 반 평균 → JSON
     """
     try:
         parent = Parent.objects.get(user=request.user)
@@ -262,11 +271,14 @@ def exam_chart_all_data(request):
         }
         return JsonResponse(data)
     except Parent.DoesNotExist:
-        return JsonResponse({"error": "해당 계정은 학부모 계정이 아닙니다."}, status=400)
+        return JsonResponse({"error": "해당 학부모를 찾을 수 없습니다."}, status=400)
 
 
 @login_required
 def download_exam_pdf(request, exam_id):
+    """
+    PDF 다운로드
+    """
     exam_result = get_object_or_404(ExamResult, id=exam_id)
     field_data = [
         {
@@ -308,7 +320,7 @@ def download_exam_pdf(request, exam_id):
 
     html_string = render_to_string("students/exam_pdf_template.html", context)
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename=\"{exam_result.exam.name}_성적.pdf\"'
+    response["Content-Disposition"] = f'attachment; filename="{exam_result.exam.name}_성적.pdf"'
 
     with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
         tmp_filename = tmp_file.name
