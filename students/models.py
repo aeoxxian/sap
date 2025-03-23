@@ -39,6 +39,13 @@ class Parent(models.Model):
     def __str__(self):
         return self.user.username
 
+    @property
+    def students(self):
+        """
+        parent.students 를 사용하면 실제로는 parent.children.all() 호출
+        """
+        return self.children.all()
+
 
 # -----------------------------
 # 학생 (Student)

@@ -114,7 +114,7 @@ def parent_signup(request):
 
             # 2) 학부모 - 학생 연결
             chosen_student = form.cleaned_data["student"]
-            # parent.children => Student 목록
+            # parent.students => Student 목록
             parent = user.parent
             chosen_student.parents.add(parent)
 
@@ -133,13 +133,13 @@ def parent_signup(request):
 def parent_dashboard(request):
     """
     학부모 대시보드:
-      - parent.children.first() 로 학생 가져옴
+      - parent.students.first() 로 학생 가져옴
       - 해당 학생의 최근 과제/이행률/코멘트 표시
       - 그래프(최근10, 전체) 표시
     """
     try:
         parent = Parent.objects.get(user=request.user)
-        student = parent.children.first()
+        student = parent.students.first()
         if not student:
             return render(request, 'students/parent_dashboard.html', {'error': "배정된 학생이 없습니다."})
 
@@ -175,7 +175,7 @@ def all_exams_view(request, student_id):
     parent = Parent.objects.get(user=request.user)
     student = get_object_or_404(Student, id=student_id)
     # 권한 체크
-    if not parent.children.filter(id=student_id).exists():
+    if not parent.students.filter(id=student_id).exists():
         messages.error(request, "접근 권한이 없습니다.")
         return redirect("parent_dashboard")
 
@@ -195,7 +195,7 @@ def all_assignments_view(request, student_id):
     parent = Parent.objects.get(user=request.user)
     student = get_object_or_404(Student, id=student_id)
     # 권한 체크
-    if not parent.children.filter(id=student_id).exists():
+    if not parent.students.filter(id=student_id).exists():
         messages.error(request, "접근 권한이 없습니다.")
         return redirect("parent_dashboard")
 
@@ -236,7 +236,7 @@ def exam_chart_data(request):
     """
     try:
         parent = Parent.objects.get(user=request.user)
-        student = parent.children.first()
+        student = parent.students.first()
         if not student:
             return JsonResponse({"error": "배정된 학생이 없습니다."}, status=400)
 
@@ -259,7 +259,7 @@ def exam_chart_all_data(request):
     """
     try:
         parent = Parent.objects.get(user=request.user)
-        student = parent.children.first()
+        student = parent.students.first()
         if not student:
             return JsonResponse({"error": "배정된 학생이 없습니다."}, status=400)
 
