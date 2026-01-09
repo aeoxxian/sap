@@ -2,140 +2,373 @@
 {% load static %}
 
 {% block content %}
-<h2>학부모 대시보드</h2>
+<div class="card">
+    <h2>학부모 대시보드</h2>
+
+    {% if student %}
+        <p style="font-size: 1.1rem; color: #6b6b6b; margin-bottom: 1.5rem;">
+            <strong>학생:</strong> {{ student.name }} ({{ student.class_group.name }})
+        </p>
+
+        <!-- 최근 과제 정보 -->
+        {% if latest_assignment %}
+        <div class="card" style="background-color: #fafafa;">
+            <h4>📝 최근 과제 ({{ latest_assignment.date|date:"Y년 m월 d일" }})</h4>
+            <ul style="margin-top: 1rem;">
+                {% if latest_assignment.task1_name %}
+                <li><strong>과제1:</strong> {{ latest_assignment.task1_name }}
+                    <span style="color: #1a1a1a; font-weight: 600;">{{ latest_submission.completion_rate1 }}%</span>
+                </li>
+                {% endif %}
+                {% if latest_assignment.task2_name %}
+                <li><strong>과제2:</strong> {{ latest_assignment.task2_name }}
+                    <span style="color: #1a1a1a; font-weight: 600;">{{ latest_submission.completion_rate2 }}%</span>
+                </li>
+                {% endif %}
+                {% if latest_assignment.task3_name %}
+                <li><strong>과제3:</strong> {{ latest_assignment.task3_name }}
+                    <span style="color: #1a1a1a; font-weight: 600;">{{ latest_submission.completion_rate3 }}%</span>
+                </li>
+                {% endif %}
+                {% if latest_assignment.task4_name %}
+                <li><strong>과제4:</strong> {{ latest_assignment.task4_name }}
+                    <span style="color: #1a1a1a; font-weight: 600;">{{ latest_submission.completion_rate4 }}%</span>
+                </li>
+                {% endif %}
+                {% if latest_assignment.task5_name %}
+                <li><strong>과제5:</strong> {{ latest_assignment.task5_name }}
+                    <span style="color: #1a1a1a; font-weight: 600;">{{ latest_submission.completion_rate5 }}%</span>
+                </li>
+                {% endif %}
+            </ul>
+            {% if latest_comment %}
+            <div style="margin-top: 1rem; padding: 1rem; background-color: #ffffff; border-left: 3px solid #1a1a1a; border-radius: 4px;">
+                <strong style="color: #6b6b6b;">코멘트:</strong>
+                <p style="white-space: pre-wrap; margin-top: 0.5rem; color: #2c2c2c;">{{ latest_comment }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- 링크 버튼 -->
+        <div style="margin: 1.5rem 0;">
+            <a href="{% url 'all_exams_view' student.id %}" class="btn" target="_blank">📊 모든 시험 보기</a>
+            <a href="{% url 'all_assignments_view' student.id %}" class="btn btn-secondary" target="_blank">📚 모든 과제 보기</a>
+        </div>
+    {% else %}
+        <div class="alert alert-error">
+            <p>배정된 학생이 없습니다.</p>
+        </div>
+    {% endif %}
+</div>
 
 {% if student %}
-    <!-- 최근 과제 정보 -->
-    {% if latest_assignment %}
-    <div style="margin-bottom: 20px;">
-      <h4>최근 과제 ({{ latest_assignment.date|date:"Y년 m월 d일" }})</h4>
-      <ul>
-        {% if latest_assignment.task1_name %}<li>과제1: {{ latest_assignment.task1_name }} / {{ latest_submission.completion_rate1 }}%</li>{% endif %}
-        {% if latest_assignment.task2_name %}<li>과제2: {{ latest_assignment.task2_name }} / {{ latest_submission.completion_rate2 }}%</li>{% endif %}
-        {% if latest_assignment.task3_name %}<li>과제3: {{ latest_assignment.task3_name }} / {{ latest_submission.completion_rate3 }}%</li>{% endif %}
-        {% if latest_assignment.task4_name %}<li>과제4: {{ latest_assignment.task4_name }} / {{ latest_submission.completion_rate4 }}%</li>{% endif %}
-        {% if latest_assignment.task5_name %}<li>과제5: {{ latest_assignment.task5_name }} / {{ latest_submission.completion_rate5 }}%</li>{% endif %}
-      </ul>
-      <p><strong>코멘트:</strong></p>
-      <p style="white-space: pre-wrap;">{{ latest_assignment.comment }}</p>
+<!-- 시험 분류 필터 -->
+<div class="card">
+    <h3>📈 시험 성적 분석</h3>
+
+    <div style="margin-bottom: 1.5rem;">
+        <label for="classGroupFilter" style="display: block; margin-bottom: 0.75rem; color: #2c2c2c; font-weight: 500; font-size: 1.05rem;">
+            📚 분반별 필터
+        </label>
+        <select id="classGroupFilter" style="width: 100%; max-width: 400px; padding: 0.75rem; border: 2px solid #e5e5e5; border-radius: 6px; font-size: 1rem; font-family: 'Segoe UI', sans-serif; background-color: #ffffff; cursor: pointer; transition: all 0.2s;">
+            <option value="all">전체 시험 보기</option>
+        </select>
     </div>
-    {% endif %}
+</div>
 
-    <!-- 두 개의 링크: 모든 시험 보기, 모든 과제 보기 -->
-    <p>
-      <a href="{% url 'all_exams_view' student.id %}" target="_blank" style="margin-right:10px;">모든 시험 보기</a>
-      <a href="{% url 'all_assignments_view' student.id %}" target="_blank">모든 과제 보기</a>
-    </p>
-
-    <!-- 최근 10회 시험 그래프 -->
-    <div style="width: 80%; max-width: 800px; height: 400px; margin: auto;">
+<!-- 최근 10회 시험 그래프 -->
+<div class="card">
+    <h3>📈 최근 10회 시험 성적 추이</h3>
+    <div class="chart-container">
         <canvas id="recentExamChart"></canvas>
     </div>
-    <p id="noDataMessage" style="display: none; color: red;">데이터가 없습니다.</p>
+    <p id="noDataMessage" style="display: none; color: #d32f2f; text-align: center;">데이터가 없습니다.</p>
+</div>
 
-    <!-- 전체 시험 그래프 -->
-    <div style="width: 80%; max-width: 800px; height: 400px; margin: auto; margin-top: 30px;">
+<!-- 전체 시험 그래프 -->
+<div class="card">
+    <h3>📊 전체 시험 성적 분석</h3>
+    <div class="chart-container">
         <canvas id="overallExamChart"></canvas>
     </div>
-    <p id="noDataMessage2" style="display: none; color: red;">데이터가 없습니다.</p>
-
-{% else %}
-    <p>배정된 학생이 없습니다.</p>
+    <p id="noDataMessage2" style="display: none; color: #d32f2f; text-align: center;">데이터가 없습니다.</p>
+</div>
 {% endif %}
 
 <!-- Chart.js 스크립트 -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-/* 최근 10회 시험 차트 */
-fetch("{% url 'exam_chart_data' %}")
-    .then(response => response.json())
-    .then(data => {
-        if (!data.exam_names || data.exam_names.length === 0) {
-            document.getElementById("noDataMessage").style.display = "block";
-            return;
-        }
-        const ctx = document.getElementById("recentExamChart").getContext("2d");
-        new Chart(ctx, {
-            type: "line",
-            data: {
-                labels: data.exam_names,
-                datasets: [
-                    {
-                        label: "학생 성적",
-                        data: data.student_scores,
-                        borderColor: "blue",
-                        backgroundColor: "rgba(0, 0, 255, 0.2)",
-                        fill: true,
-                        tension: 0.1,
-                        pointRadius: 0
-                    },
-                    {
-                        label: "반 평균",
-                        data: data.class_averages,
-                        borderColor: "red",
-                        backgroundColor: "rgba(255, 0, 0, 0.2)",
-                        fill: true,
-                        tension: 0.1,
-                        pointRadius: 0
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    })
-    .catch(err => console.error("🚨 exam_chart_data fetch error:", err));
+let recentChart, overallChart;
+let allExamData = [];
 
-/* 전체 시험 차트 */
+// Fetch all exam data and populate filter
 fetch("{% url 'exam_chart_all_data' %}")
     .then(response => response.json())
     .then(data => {
         if (!data.exam_names || data.exam_names.length === 0) {
-            document.getElementById("noDataMessage2").style.display = "block";
             return;
         }
-        const ctx2 = document.getElementById("overallExamChart").getContext("2d");
-        new Chart(ctx2, {
-            data: {
-                labels: data.exam_names,
-                datasets: [
-                    {
-                        type: 'line',
-                        label: "학생 성적",
-                        data: data.student_scores,
-                        borderColor: "green",
-                        backgroundColor: "transparent",
-                        tension: 0.1,
-                        pointRadius: 0
-                    },
-                    {
-                        type: 'bar',
-                        label: "반 평균",
-                        data: data.class_averages,
-                        backgroundColor: "rgba(255,165,0,0.5)",
-                        borderColor: "orange"
+
+        // Store all data
+        allExamData = data;
+
+        // Extract unique class groups from exam names
+        const classGroups = new Set();
+        data.exam_names.forEach(name => {
+            // Extract class group pattern from exam name if it contains it
+            const match = name.match(/^([가-힣]+\d+-\d+)/);
+            if (match) {
+                classGroups.add(match[1]);
+            }
+        });
+
+        // Populate filter dropdown
+        const filter = document.getElementById('classGroupFilter');
+        classGroups.forEach(group => {
+            const option = document.createElement('option');
+            option.value = group;
+            option.textContent = group + ' 반';
+            filter.appendChild(option);
+        });
+
+        // Initial load
+        updateCharts('all');
+    })
+    .catch(err => console.error("🚨 exam_chart_all_data fetch error:", err));
+
+// Filter change event
+document.getElementById('classGroupFilter').addEventListener('change', function() {
+    updateCharts(this.value);
+});
+
+function updateCharts(filterValue) {
+    // Filter data based on selection
+    let filteredData = {
+        exam_names: [],
+        student_scores: [],
+        class_averages: []
+    };
+
+    if (filterValue === 'all') {
+        filteredData = allExamData;
+    } else {
+        allExamData.exam_names.forEach((name, index) => {
+            if (name.startsWith(filterValue)) {
+                filteredData.exam_names.push(name);
+                filteredData.student_scores.push(allExamData.student_scores[index]);
+                filteredData.class_averages.push(allExamData.class_averages[index]);
+            }
+        });
+    }
+
+    // Update recent 10 chart
+    const recentData = {
+        exam_names: filteredData.exam_names.slice(-10),
+        student_scores: filteredData.student_scores.slice(-10),
+        class_averages: filteredData.class_averages.slice(-10)
+    };
+
+    updateRecentChart(recentData);
+    updateOverallChart(filteredData);
+}
+
+function updateRecentChart(data) {
+    const ctx = document.getElementById("recentExamChart").getContext("2d");
+
+    if (recentChart) {
+        recentChart.destroy();
+    }
+
+    if (!data.exam_names || data.exam_names.length === 0) {
+        document.getElementById("noDataMessage").style.display = "block";
+        return;
+    }
+
+    document.getElementById("noDataMessage").style.display = "none";
+
+    recentChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: data.exam_names,
+            datasets: [
+                {
+                    label: "학생 성적",
+                    data: data.student_scores,
+                    borderColor: "rgba(147, 112, 219, 1)",  // Pastel purple
+                    backgroundColor: "rgba(147, 112, 219, 0.2)",
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointBackgroundColor: "rgba(147, 112, 219, 1)",
+                    pointBorderColor: "#fff",
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 7,
+                    borderWidth: 2
+                },
+                {
+                    label: "반 평균",
+                    data: data.class_averages,
+                    borderColor: "rgba(255, 182, 193, 1)",
+                    backgroundColor: "rgba(255, 182, 193, 0.15)",
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: "rgba(255, 182, 193, 1)",
+                    pointBorderColor: "#fff",
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 6,
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        font: {
+                            size: 14,
+                            family: "'Segoe UI', sans-serif",
+                            weight: 'bold'
+                        },
+                        color: '#2c2c2c',
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
                     }
-                ]
+                }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#6b6b6b',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#6b6b6b',
+                        font: {
+                            size: 11
+                        }
                     }
                 }
             }
-        });
-    })
-    .catch(err => console.error("🚨 exam_chart_all_data fetch error:", err));
+        }
+    });
+}
+
+function updateOverallChart(data) {
+    const ctx2 = document.getElementById("overallExamChart").getContext("2d");
+
+    if (overallChart) {
+        overallChart.destroy();
+    }
+
+    if (!data.exam_names || data.exam_names.length === 0) {
+        document.getElementById("noDataMessage2").style.display = "block";
+        return;
+    }
+
+    document.getElementById("noDataMessage2").style.display = "none";
+
+    overallChart = new Chart(ctx2, {
+        data: {
+            labels: data.exam_names,
+            datasets: [
+                {
+                    type: 'line',
+                    label: "학생 성적",
+                    data: data.student_scores,
+                    borderColor: "rgba(120, 200, 120, 0.9)",  // Slightly darker pastel green
+                    backgroundColor: "rgba(120, 200, 120, 0.2)",
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: "rgba(120, 200, 120, 0.9)",
+                    pointBorderColor: "#fff",
+                    pointBorderWidth: 2,
+                    fill: true,
+                    borderWidth: 2
+                },
+                {
+                    type: 'bar',
+                    label: "반 평균",
+                    data: data.class_averages,
+                    backgroundColor: "rgba(255, 218, 185, 0.7)",
+                    borderColor: "rgba(255, 218, 185, 1)",
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        font: {
+                            size: 14,
+                            family: "'Segoe UI', sans-serif",
+                            weight: 'bold'
+                        },
+                        color: '#2c2c2c',
+                        padding: 15,
+                        usePointStyle: true
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#6b6b6b',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#6b6b6b',
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
 </script>
+
+<style>
+#classGroupFilter:hover {
+    border-color: #1a1a1a;
+}
+
+#classGroupFilter:focus {
+    outline: none;
+    border-color: #1a1a1a;
+    box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+}
+</style>
+
 {% endblock %}

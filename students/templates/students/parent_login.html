@@ -1,22 +1,46 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <title>학부모 로그인</title>
-</head>
-<body>
-    <h2>학부모 로그인</h2>
-    {% if messages %}
-        <ul>
-            {% for message in messages %}
-                <li>{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 4rem auto;">
+    <h2 style="text-align: center; margin-bottom: 2rem;">로그인</h2>
+
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">로그인</button>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="id_username" style="display: block; margin-bottom: 0.5rem; color: #2c2c2c; font-weight: 500;">아이디</label>
+            {{ form.username }}
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="id_password" style="display: block; margin-bottom: 0.5rem; color: #2c2c2c; font-weight: 500;">비밀번호</label>
+            {{ form.password }}
+        </div>
+
+        <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">로그인</button>
     </form>
-</body>
-</html>
+
+    <div style="margin-top: 1.5rem; text-align: center; padding-top: 1.5rem; border-top: 1px solid #e5e5e5;">
+        <p style="color: #6b6b6b;">계정이 없으신가요? <a href="{% url 'parent_signup' %}" style="color: #1a1a1a; font-weight: 600;">회원가입</a></p>
+    </div>
+</div>
+
+<style>
+    input[type="text"],
+    input[type="password"] {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #e5e5e5;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: 'Segoe UI', sans-serif;
+        transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+        outline: none;
+        border-color: #1a1a1a;
+    }
+</style>
+{% endblock %}

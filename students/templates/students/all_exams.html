@@ -2,31 +2,47 @@
 {% load static %}
 
 {% block content %}
-<h2>{{ student.name }} 전체 시험 목록</h2>
-<table border="1">
-    <thead>
-        <tr>
-            <th>시험명</th>
-            <th>실시 날짜</th>
-            <th>총점</th>
-            <th>석차</th>
-            <th>응시 상태</th>
-            <th>자세한 성적 보기</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for result in exam_results %}
-        <tr>
-            <td>{{ result.exam.name }}</td>
-            <td>{{ result.exam.date|date:"Y년 m월 d일" }}</td>
-            <td>{{ result.total_score }}</td>
-            <td>{{ result.rank }}</td>
-            <td>{{ result.status }}</td>
-            <td>
-                <a href="{% url 'exam_detail' result.student.id result.exam.id %}" target="_blank">상세 보기</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="card">
+    <h2>{{ student.name }} - 전체 시험 목록</h2>
+    <p style="color: #6b6b6b; margin-bottom: 1.5rem;">{{ student.class_group.name }} 반</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>시험명</th>
+                <th>실시 날짜</th>
+                <th>총점</th>
+                <th>석차</th>
+                <th>응시 상태</th>
+                <th>상세 보기</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in exam_results %}
+            <tr>
+                <td><strong>{{ result.exam.name }}</strong></td>
+                <td>{{ result.exam.date|date:"Y년 m월 d일" }}</td>
+                <td><span style="font-weight: 600;">{{ result.total_score }}</span> / {{ result.max_score }}</td>
+                <td>{{ result.rank }}등</td>
+                <td>
+                    <span style="padding: 0.25rem 0.75rem; background-color: #fafafa; border-radius: 4px; font-size: 0.9rem;">
+                        {{ result.status }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{% url 'exam_detail' result.student.id result.exam.id %}" class="btn" style="padding: 0.5rem 1rem; font-size: 0.85rem;" target="_blank">
+                        📄 상세 보기
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: #6b6b6b; padding: 2rem;">
+                    등록된 시험 결과가 없습니다.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

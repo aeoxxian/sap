@@ -137,6 +137,11 @@ def parent_dashboard(request):
       - 해당 학생의 최근 과제/이행률/코멘트 표시
       - 그래프(최근10, 전체) 표시
     """
+    # Check if user is staff/admin - redirect to admin panel
+    if request.user.is_staff or request.user.is_superuser:
+        messages.info(request, "관리자 계정입니다. 관리자 페이지로 이동합니다.")
+        return redirect("/admin/")
+
     try:
         parent = Parent.objects.get(user=request.user)
         student = parent.students.first()
@@ -163,7 +168,7 @@ def parent_dashboard(request):
             "latest_comment": latest_comment,
         })
     except Parent.DoesNotExist:
-        messages.error(request, "해당 계정은 학부모 계정이 아닙니다.")
+        messages.error(request, "해당 계정은 학부모 계정이 아닙니다. 관리자 계정이라면 /admin/ 으로 접속하세요.")
         return redirect("parent_login")
 
 

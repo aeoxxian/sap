@@ -2,67 +2,80 @@
 {% load static %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2>{{ exam_result.exam.name }} ({{ exam_result.exam.date|date:"Y년 m월 d일" }})</h2>
+<div class="card">
+    <h2>{{ exam_result.exam.name }}</h2>
+    <p style="color: #6b6b6b; margin-bottom: 1.5rem;">{{ exam_result.exam.date|date:"Y년 m월 d일" }}</p>
 
-  <div class="card mb-3">
-    <div class="card-body">
-      <p><strong>총점:</strong> {{ exam_result.total_score }} / {{ exam_result.max_score }}</p>
-      <p><strong>반 평균:</strong> {{ exam_result.exam.average }}</p>
-      <p><strong>석차:</strong> {{ exam_result.rank }}</p>
-      <p><strong>응시 상태:</strong> {{ exam_result.status }}</p>
+    <div class="info-grid">
+        <div class="info-item">
+            <strong>총점</strong>
+            <span>{{ exam_result.total_score }} / {{ exam_result.max_score }}</span>
+        </div>
+        <div class="info-item">
+            <strong>반 평균</strong>
+            <span>{{ exam_result.exam.average }}</span>
+        </div>
+        <div class="info-item">
+            <strong>석차</strong>
+            <span>{{ exam_result.rank }}등</span>
+        </div>
+        <div class="info-item">
+            <strong>응시 상태</strong>
+            <span style="font-size: 1.1rem;">{{ exam_result.status }}</span>
+        </div>
     </div>
-  </div>
+</div>
 
-  <!-- 분야별 성적 비교 그래프 -->
-  <div class="card mb-3">
-    <div class="card-body">
-      <h5 class="card-title">분야별 성적 비교 그래프</h5>
-      <div style="width: 80%; max-width: 800px; height: 400px; margin: auto;">
+<!-- 분야별 성적 비교 그래프 -->
+<div class="card">
+    <h3>분야별 성적 비교</h3>
+    <div class="chart-container">
         <canvas id="examDetailChart"></canvas>
-      </div>
-      <p id="noDataDetailMessage" style="display: none; color: red;">데이터가 없습니다.</p>
     </div>
-  </div>
+    <p id="noDataDetailMessage" style="display: none; color: #d32f2f; text-align: center;">데이터가 없습니다.</p>
+</div>
 
-  <div class="card mb-3">
-    <div class="card-body">
-      <h5 class="card-title">분야별 점수</h5>
-      <ul>
-        {% if exam_result.field1_definition %}
-          <li><strong>{{ exam_result.field1_definition.name }}:</strong> {{ exam_result.field1 }}</li>
-        {% elif exam_result.field1 %}
-          <li><strong>분야 1:</strong> {{ exam_result.field1 }}</li>
+<!-- 분야별 점수 상세 -->
+<div class="card">
+    <h3>분야별 점수</h3>
+    <ul>
+        {% if exam_result.field1_definition or exam_result.field1 %}
+        <li>
+            <strong>{{ exam_result.field1_definition.name|default:'분야 1' }}:</strong>
+            <span style="float: right; font-weight: 600;">{{ exam_result.field1 }}점</span>
+        </li>
         {% endif %}
-        {% if exam_result.field2_definition %}
-          <li><strong>{{ exam_result.field2_definition.name }}:</strong> {{ exam_result.field2 }}</li>
-        {% elif exam_result.field2 %}
-          <li><strong>분야 2:</strong> {{ exam_result.field2 }}</li>
+        {% if exam_result.field2_definition or exam_result.field2 %}
+        <li>
+            <strong>{{ exam_result.field2_definition.name|default:'분야 2' }}:</strong>
+            <span style="float: right; font-weight: 600;">{{ exam_result.field2 }}점</span>
+        </li>
         {% endif %}
-        {% if exam_result.field3_definition %}
-          <li><strong>{{ exam_result.field3_definition.name }}:</strong> {{ exam_result.field3 }}</li>
-        {% elif exam_result.field3 %}
-          <li><strong>분야 3:</strong> {{ exam_result.field3 }}</li>
+        {% if exam_result.field3_definition or exam_result.field3 %}
+        <li>
+            <strong>{{ exam_result.field3_definition.name|default:'분야 3' }}:</strong>
+            <span style="float: right; font-weight: 600;">{{ exam_result.field3 }}점</span>
+        </li>
         {% endif %}
-        {% if exam_result.field4_definition %}
-          <li><strong>{{ exam_result.field4_definition.name }}:</strong> {{ exam_result.field4 }}</li>
-        {% elif exam_result.field4 %}
-          <li><strong>분야 4:</strong> {{ exam_result.field4 }}</li>
+        {% if exam_result.field4_definition or exam_result.field4 %}
+        <li>
+            <strong>{{ exam_result.field4_definition.name|default:'분야 4' }}:</strong>
+            <span style="float: right; font-weight: 600;">{{ exam_result.field4 }}점</span>
+        </li>
         {% endif %}
-        {% if exam_result.field5_definition %}
-          <li><strong>{{ exam_result.field5_definition.name }}:</strong> {{ exam_result.field5 }}</li>
-        {% elif exam_result.field5 %}
-          <li><strong>분야 5:</strong> {{ exam_result.field5 }}</li>
+        {% if exam_result.field5_definition or exam_result.field5 %}
+        <li>
+            <strong>{{ exam_result.field5_definition.name|default:'분야 5' }}:</strong>
+            <span style="float: right; font-weight: 600;">{{ exam_result.field5 }}점</span>
+        </li>
         {% endif %}
-      </ul>
-    </div>
-  </div>
+    </ul>
+</div>
 
-  <!-- PDF 다운로드 및 뒤로 가기 버튼 -->
-  <div class="mb-3">
-    <a href="{% url 'download_exam_pdf' exam_result.id %}" class="btn btn-primary" target="_blank">📄 PDF 다운로드</a>
+<!-- 버튼 -->
+<div style="margin: 1.5rem 0;">
+    <a href="{% url 'download_exam_pdf' exam_result.id %}" class="btn" target="_blank">📄 PDF 다운로드</a>
     <a href="{% url 'parent_dashboard' %}" class="btn btn-secondary">뒤로 가기</a>
-  </div>
 </div>
 
 <!-- Chart.js 라이브러리 추가 -->
@@ -110,15 +123,15 @@
                     {
                         label: "학생 점수",
                         data: studentFieldScores,
-                        backgroundColor: "rgba(54, 162, 235, 0.5)",
-                        borderColor: "rgba(54, 162, 235, 1)",
+                        backgroundColor: "rgba(173, 216, 230, 0.7)",  // 파스텔 블루
+                        borderColor: "rgba(173, 216, 230, 1)",
                         borderWidth: 1
                     },
                     {
                         label: "반 평균",
                         data: classFieldAverages,
-                        backgroundColor: "rgba(255, 99, 132, 0.5)",
-                        borderColor: "rgba(255, 99, 132, 1)",
+                        backgroundColor: "rgba(255, 182, 193, 0.7)",  // 파스텔 핑크
+                        borderColor: "rgba(255, 182, 193, 1)",
                         borderWidth: 1
                     }
                 ]
@@ -131,8 +144,8 @@
                     {
                         label: "성적 비교",
                         data: [{{ exam_result.total_score|default:"0" }}, {{ exam_result.exam.average|default:"0" }}],
-                        backgroundColor: ["rgba(54, 162, 235, 0.5)", "rgba(255, 99, 132, 0.5)"],
-                        borderColor: ["rgba(54, 162, 235, 1)", "rgba(255, 99, 132, 1)"],
+                        backgroundColor: ["rgba(173, 216, 230, 0.7)", "rgba(255, 182, 193, 0.7)"],
+                        borderColor: ["rgba(173, 216, 230, 1)", "rgba(255, 182, 193, 1)"],
                         borderWidth: 1
                     }
                 ]
@@ -144,11 +157,36 @@
             data: chartData,
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {
+                                size: 13,
+                                family: "'Segoe UI', sans-serif"
+                            },
+                            color: '#2c2c2c',
+                            padding: 15
+                        }
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 100
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            color: '#6b6b6b'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            color: '#6b6b6b'
+                        }
                     }
                 }
             }

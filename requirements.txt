@@ -1,0 +1,5 @@
+Django==5.1.4
+pandas>=2.0.0
+matplotlib>=3.7.0
+WeasyPrint>=60.0
+django-smart-selects>=1.6.0

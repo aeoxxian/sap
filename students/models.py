@@ -22,7 +22,7 @@ class ClassGroup(models.Model):
 # -----------------------------
 class Parent(models.Model):
     """
-    학부모 계정 정보
+    학부모 계정 정보S
     - 학생과의 M2M 연결은 Student 모델에 정의 (parents)
     - 역참조 시: parent.children.all()
     """
@@ -82,8 +82,10 @@ class Student(models.Model):
 # 학부모 User 생성 시 Parent 자동 생성
 @receiver(post_save, sender=User)
 def create_parent_profile(sender, instance, created, **kwargs):
-    if created:
-        Parent.objects.create(user=instance)
+    if created and not instance.is_staff and not instance.is_superuser:
+        # Only create Parent for regular users (not admin/staff)
+        # Admin users with ParentInline will have Parent created by the inline
+        Parent.objects.get_or_create(user=instance)
 
 
 # -----------------------------

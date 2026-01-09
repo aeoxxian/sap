@@ -103,6 +103,13 @@ class ParentSignUpForm(UserCreationForm):
             lambda obj: f"{obj.name} ({obj.class_group.name})"
         )
 
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["email"]
+        if commit:
+            user.save()
+        return user
+
 
             
             

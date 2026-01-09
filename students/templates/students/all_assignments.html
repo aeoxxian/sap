@@ -2,59 +2,89 @@
 {% load static %}
 
 {% block content %}
-<h2>{{ student.class_group.name }} 반 - 전체 과제 목록</h2>
-<p>{{ student.name }} 학생</p>
+<div class="card">
+    <h2>{{ student.name }} - 전체 과제 목록</h2>
+    <p style="color: #6b6b6b; margin-bottom: 1.5rem;">{{ student.class_group.name }} 반</p>
 
-<table border="1" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-  <thead>
-    <tr>
-      <th>날짜</th>
-      <th>과제1</th>
-      <th>과제2</th>
-      <th>과제3</th>
-      <th>과제4</th>
-      <th>과제5</th>
-      <th>이행률1</th>
-      <th>이행률2</th>
-      <th>이행률3</th>
-      <th>이행률4</th>
-      <th>이행률5</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for a in assignments %}
-      <tr>
-        <td>{{ a.date|date:"Y-m-d" }}</td>
-        <td>{{ a.task1_name }}</td>
-        <td>{{ a.task2_name }}</td>
-        <td>{{ a.task3_name }}</td>
-        <td>{{ a.task4_name }}</td>
-        <td>{{ a.task5_name }}</td>
-        
-        <!-- 이행률 (0~100) -->
-        {% if a.submission %}
-          <td>{{ a.submission.completion_rate1 }}%</td>
-          <td>{{ a.submission.completion_rate2 }}%</td>
-          <td>{{ a.submission.completion_rate3 }}%</td>
-          <td>{{ a.submission.completion_rate4 }}%</td>
-          <td>{{ a.submission.completion_rate5 }}%</td>
-        {% else %}
-          <td colspan="5" style="text-align:center;">이행 정보 없음</td>
-        {% endif %}
-      </tr>
+    <table>
+        <thead>
+            <tr>
+                <th>날짜</th>
+                <th>과제1</th>
+                <th>과제2</th>
+                <th>과제3</th>
+                <th>과제4</th>
+                <th>과제5</th>
+                <th style="text-align: center;">이행률1</th>
+                <th style="text-align: center;">이행률2</th>
+                <th style="text-align: center;">이행률3</th>
+                <th style="text-align: center;">이행률4</th>
+                <th style="text-align: center;">이행률5</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in assignments %}
+            <tr>
+                <td><strong>{{ a.date|date:"Y-m-d" }}</strong></td>
+                <td>{{ a.task1_name|default:"-" }}</td>
+                <td>{{ a.task2_name|default:"-" }}</td>
+                <td>{{ a.task3_name|default:"-" }}</td>
+                <td>{{ a.task4_name|default:"-" }}</td>
+                <td>{{ a.task5_name|default:"-" }}</td>
 
-      <!-- 코멘트는 아래 줄로 내려서 표시 (Submission에 daily_comment가 존재) -->
-      <tr>
-        <td colspan="11" style="white-space: pre-wrap; padding:8px;">
-          <strong>코멘트: </strong>
-          {% if a.submission and a.submission.daily_comment %}
-            {{ a.submission.daily_comment }}
-          {% else %}
-            (코멘트 없음)
-          {% endif %}
-        </td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
+                <!-- 이행률 (0~100) -->
+                {% if a.submission %}
+                    <td style="text-align: center;">
+                        <span style="padding: 0.25rem 0.5rem; background-color: #fafafa; border-radius: 4px; font-weight: 600;">
+                            {{ a.submission.completion_rate1 }}%
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        <span style="padding: 0.25rem 0.5rem; background-color: #fafafa; border-radius: 4px; font-weight: 600;">
+                            {{ a.submission.completion_rate2 }}%
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        <span style="padding: 0.25rem 0.5rem; background-color: #fafafa; border-radius: 4px; font-weight: 600;">
+                            {{ a.submission.completion_rate3 }}%
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        <span style="padding: 0.25rem 0.5rem; background-color: #fafafa; border-radius: 4px; font-weight: 600;">
+                            {{ a.submission.completion_rate4 }}%
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        <span style="padding: 0.25rem 0.5rem; background-color: #fafafa; border-radius: 4px; font-weight: 600;">
+                            {{ a.submission.completion_rate5 }}%
+                        </span>
+                    </td>
+                {% else %}
+                    <td colspan="5" style="text-align: center; color: #6b6b6b;">이행 정보 없음</td>
+                {% endif %}
+            </tr>
+
+            <!-- 코멘트는 아래 줄로 내려서 표시 -->
+            <tr style="background-color: #fafafa;">
+                <td colspan="11" style="white-space: pre-wrap; padding: 1rem;">
+                    <strong style="color: #1a1a1a;">코멘트: </strong>
+                    <span style="color: #2c2c2c;">
+                    {% if a.submission and a.submission.daily_comment %}
+                        {{ a.submission.daily_comment }}
+                    {% else %}
+                        (코멘트 없음)
+                    {% endif %}
+                    </span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="11" style="text-align: center; color: #6b6b6b; padding: 2rem;">
+                    등록된 과제가 없습니다.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}
